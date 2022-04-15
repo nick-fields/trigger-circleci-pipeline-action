@@ -12709,10 +12709,14 @@ const [, , repoOrg, repoName] = pattern.exec(payload.repository.url);
 (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Org: ${repoOrg}`);
 (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Repo: ${repoName}`);
 const ref = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.ref;
+const headRef = process.env.GITHUB_HEAD_REF;
 
 const getBranch = () => {
   if (ref.startsWith("refs/heads/")) {
     return ref.substring(11);
+  } else if (ref.startsWith("refs/pull/") && headRef) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`This is a PR. Using head ref ${headRef} instead of ${ref}`);
+    return headRef;
   }
   return ref;
 };
@@ -12728,20 +12732,8 @@ const headers = {
   "x-attribution-actor-id": _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.actor,
   "Circle-Token": `${process.env.CCI_TOKEN}`,
 };
-const parameters = {
-  GHA_Actor: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.actor,
-  GHA_Action: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.action,
-  GHA_Event: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.eventName,
-};
 
-const metaData = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("GHA_Meta");
-if (metaData.length > 0) {
-  Object.assign(parameters, { GHA_Meta: metaData });
-}
-
-const body = {
-  parameters: parameters,
-};
+const body = {};
 
 const tag = getTag();
 const branch = getBranch();
@@ -12761,7 +12753,6 @@ if (tag) {
 } else {
   (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Triggering branch: ${branch}`);
 }
-(0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Parameters:\n${JSON.stringify(parameters)}`);
 (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.endGroup)();
 
 axios__WEBPACK_IMPORTED_MODULE_2___default().post(url, body, { headers: headers })

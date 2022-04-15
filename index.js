@@ -1,5 +1,4 @@
 import {
-  getInput,
   setFailed,
   startGroup,
   endGroup,
@@ -17,10 +16,14 @@ info(`URL: ${payload.repository.url}`);
 info(`Org: ${repoOrg}`);
 info(`Repo: ${repoName}`);
 const ref = context.ref;
+const headRef = process.env.GITHUB_HEAD_REF;
 
 const getBranch = () => {
   if (ref.startsWith("refs/heads/")) {
     return ref.substring(11);
+  } else if (ref.startsWith("refs/pull/") && headRef) {
+    info(`This is a PR. Using head ref ${headRef} instead of ${ref}`);
+    return headRef;
   }
   return ref;
 };
@@ -36,20 +39,8 @@ const headers = {
   "x-attribution-actor-id": context.actor,
   "Circle-Token": `${process.env.CCI_TOKEN}`,
 };
-const parameters = {
-  GHA_Actor: context.actor,
-  GHA_Action: context.action,
-  GHA_Event: context.eventName,
-};
 
-const metaData = getInput("GHA_Meta");
-if (metaData.length > 0) {
-  Object.assign(parameters, { GHA_Meta: metaData });
-}
-
-const body = {
-  parameters: parameters,
-};
+const body = {};
 
 const tag = getTag();
 const branch = getBranch();
@@ -69,7 +60,6 @@ if (tag) {
 } else {
   info(`Triggering branch: ${branch}`);
 }
-info(`Parameters:\n${JSON.stringify(parameters)}`);
 endGroup();
 
 axios
